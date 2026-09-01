@@ -1,0 +1,42 @@
+{
+  "name": "@reviewkit/core",
+  "version": "0.1.0-alpha.0",
+  "description": "Headless core for ReviewKit: Action Proposal / Review Decision / Execution Receipt types, canonical hashing, review state machine and storage interfaces.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema/action-proposal.json": "./schema/action-proposal.json",
+    "./schema/review-decision.json": "./schema/review-decision.json",
+    "./schema/execution-receipt.json": "./schema/execution-receipt.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "schema",
+    "README.md"
+  ],
+  "keywords": [
+    "agent",
+    "human-in-the-loop",
+    "approval",
+    "review",
+    "diff",
+    "ai"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsdown"
+  },
+  "dependencies": {
+    "arktype": "^2.1.20"
+  }
+}

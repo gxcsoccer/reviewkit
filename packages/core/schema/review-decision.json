@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://reviewkit.dev/schema/0.1/review-decision.json",
+  "title": "ReviewKit Review Decision",
+  "description": "A reviewer's verdict, bound to one exact proposal revision. An approving decision without approvedContentHash + a non-empty approvedItemIds is not executable.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "proposalId",
+    "proposalVersion",
+    "contentHash",
+    "kind",
+    "reviewer",
+    "decidedAt",
+    "idempotencyKey"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "id": { "type": "string", "minLength": 1 },
+    "proposalId": { "type": "string", "minLength": 1 },
+    "proposalVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The exact revision this decision is bound to."
+    },
+    "contentHash": { "$ref": "#/definitions/contentHash" },
+    "approvedContentHash": {
+      "allOf": [{ "$ref": "#/definitions/contentHash" }],
+      "description": "Hash of the approved item subset. Executed parameters must hash to this value."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["approve", "approve_with_edits", "reject", "defer", "cancel"]
+    },
+    "reviewer": { "$ref": "#/definitions/identity" },
+    "decidedAt": { "type": "string", "format": "date-time" },
+    "approvedItemIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Items the reviewer approved, in canonical (sorted) order."
+    },
+    "itemDecisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["itemId", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "itemId": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["approved", "rejected", "edited"] },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "reason": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": "string" }
+      }
+    },
+    "deferUntil": { "type": "string", "format": "date-time" },
+    "traceId": { "type": "string" },
+    "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "editedBeforeApproval": { "type": "boolean" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["kind"],
+        "properties": { "kind": { "enum": ["approve", "approve_with_edits"] } }
+      },
+      "then": {
+        "required": ["approvedContentHash", "approvedItemIds"],
+        "properties": {
+          "approvedContentHash": { "$ref": "#/definitions/contentHash" },
+          "approvedItemIds": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "contentHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "identity": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "kind": { "type": "string", "enum": ["user", "agent", "service", "system"] },
+        "email": { "type": "string" },
+        "attributes": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    }
+  }
+}

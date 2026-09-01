@@ -1,0 +1,264 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://reviewkit.dev/schema/0.1/action-proposal.json",
+  "title": "ReviewKit Action Proposal",
+  "description": "What an agent wants to do, in a form a human can review. Schema version 0.1 (alpha): only additive changes within 0.1.x.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "version",
+    "status",
+    "type",
+    "subject",
+    "summary",
+    "risk",
+    "items",
+    "target",
+    "origin",
+    "createdAt",
+    "idempotencyKey",
+    "contentHash"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "id": { "type": "string", "minLength": 1 },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Content revision. Bumped whenever an execution-relevant field changes."
+    },
+    "status": { "$ref": "#/definitions/proposalStatus" },
+    "type": { "type": "string", "minLength": 1, "description": "Namespaced action type, e.g. crm.contact.update" },
+    "subject": {
+      "type": "object",
+      "required": ["type", "count"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string" },
+        "count": { "type": "integer", "minimum": 0 },
+        "label": { "type": "string" }
+      }
+    },
+    "summary": { "type": "string", "maxLength": 2000 },
+    "reason": { "type": "string", "description": "The agent's stated reason. Untrusted text." },
+    "evidence": { "type": "array", "items": { "$ref": "#/definitions/evidence" } },
+    "risk": { "$ref": "#/definitions/riskAssessment" },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/definitions/actionItem" }
+    },
+    "target": { "$ref": "#/definitions/actionTarget" },
+    "origin": {
+      "type": "object",
+      "required": ["initiatedBy"],
+      "additionalProperties": false,
+      "properties": {
+        "initiatedBy": { "$ref": "#/definitions/identity" },
+        "agent": { "type": "string" },
+        "agentRunId": { "type": "string" },
+        "tool": { "type": "string" }
+      }
+    },
+    "traceId": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Stable across revisions; scopes execution idempotency."
+    },
+    "contentHash": { "$ref": "#/definitions/contentHash" },
+    "supersededBy": {
+      "type": "object",
+      "required": ["id", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "revisionOf": {
+      "type": "object",
+      "required": ["version"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "integer", "minimum": 1 },
+        "reason": { "type": "string" }
+      }
+    },
+    "execution": { "$ref": "#/definitions/executionState" },
+    "redaction": { "$ref": "#/definitions/redactionPolicy" },
+    "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+  },
+  "definitions": {
+    "contentHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA-256 over the canonical (RFC 8785 style) JSON of the execution-relevant fields."
+    },
+    "proposalStatus": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "reviewing",
+        "changes_requested",
+        "approved",
+        "rejected",
+        "expired",
+        "cancelled",
+        "superseded",
+        "invalidated"
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "kind": { "type": "string", "enum": ["user", "agent", "service", "system"] },
+        "email": { "type": "string" },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Host attributes. Never used for authorization."
+        }
+      }
+    },
+    "riskAssessment": {
+      "type": "object",
+      "required": ["level"],
+      "additionalProperties": false,
+      "properties": {
+        "level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["label"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "ref": { "type": "string" },
+        "url": {
+          "type": "string",
+          "description": "http(s)/mailto only. Other schemes are dropped at render time."
+        },
+        "snippet": { "type": "string", "description": "Rendered as text, never as HTML." },
+        "kind": { "type": "string" }
+      }
+    },
+    "actionTarget": {
+      "type": "object",
+      "required": ["system"],
+      "additionalProperties": false,
+      "properties": {
+        "system": { "type": "string" },
+        "resource": { "type": "string" },
+        "environment": { "type": "string" },
+        "sourceVersion": {
+          "type": "string",
+          "description": "Host version of the source data this proposal was built from. Drift invalidates the proposal."
+        }
+      }
+    },
+    "itemSource": {
+      "type": "object",
+      "required": ["ref"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string", "description": "Stable reference, e.g. crm:contact:c_1" },
+        "version": { "type": "string", "description": "etag / updatedAt / row version" },
+        "fetchedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "actionItem": {
+      "type": "object",
+      "required": ["id", "kind", "operation", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "description": "Renderer hint: json | text | table | custom id" },
+        "operation": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["pending", "approved", "edited", "rejected", "invalidated"] },
+        "summary": { "type": "string" },
+        "before": { "description": "Current state in the host system. Absent for create." },
+        "after": { "description": "Proposed state — the execution payload. Absent for delete." },
+        "risk": { "$ref": "#/definitions/riskAssessment" },
+        "source": { "$ref": "#/definitions/itemSource" },
+        "meta": { "type": "object", "description": "Host/agent metadata. Not execution input." },
+        "editedFrom": {
+          "type": "object",
+          "required": ["version"],
+          "additionalProperties": false,
+          "properties": {
+            "version": { "type": "integer", "minimum": 1 },
+            "after": {}
+          }
+        },
+        "invalidation": {
+          "type": "object",
+          "required": ["reason"],
+          "additionalProperties": false,
+          "properties": {
+            "reason": { "type": "string" },
+            "expectedVersion": { "type": "string" },
+            "actualVersion": { "type": "string" }
+          }
+        }
+      }
+    },
+    "executionState": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "running",
+            "partially_succeeded",
+            "succeeded",
+            "failed",
+            "rolled_back"
+          ]
+        },
+        "requestId": { "type": "string" },
+        "decisionId": { "type": "string" },
+        "payloadHash": { "$ref": "#/definitions/contentHash" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "finishedAt": { "type": "string", "format": "date-time" },
+        "receiptIds": { "type": "array", "items": { "type": "string" } },
+        "hashMismatch": {
+          "type": "boolean",
+          "description": "True when a receipt did not match the approved hash (fail-closed marker)."
+        }
+      }
+    },
+    "redactionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maskPaths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Dot paths inside item before/after. `*` matches one segment, `**` any depth."
+        },
+        "mask": { "type": "string" },
+        "revealable": { "type": "boolean" }
+      }
+    }
+  }
+}

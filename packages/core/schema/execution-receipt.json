@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://reviewkit.dev/schema/0.1/execution-receipt.json",
+  "title": "ReviewKit Execution Receipt",
+  "description": "What the host actually did. executedParamsHash must equal the approved payload hash, or ReviewKit fails closed and marks the execution rejected.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "proposalId",
+    "proposalVersion",
+    "decisionId",
+    "idempotencyKey",
+    "executedParamsHash",
+    "status",
+    "startedAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "id": { "type": "string", "minLength": 1 },
+    "proposalId": { "type": "string", "minLength": 1 },
+    "proposalVersion": { "type": "integer", "minimum": 1 },
+    "decisionId": { "type": "string", "minLength": 1 },
+    "requestId": { "type": "string" },
+    "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "executedParamsHash": {
+      "allOf": [{ "$ref": "#/definitions/contentHash" }],
+      "description": "Hash of the parameters the host really sent, from computePayloadHash()."
+    },
+    "status": { "$ref": "#/definitions/executionStatus" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "finishedAt": { "type": "string", "format": "date-time" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["itemId", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "itemId": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["succeeded", "failed", "skipped", "rolled_back"] },
+          "externalRef": { "$ref": "#/definitions/externalRef" },
+          "error": { "$ref": "#/definitions/executionError" },
+          "finishedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Per-item outcomes. A failed item must carry an error so the UI can explain it."
+    },
+    "error": { "$ref": "#/definitions/executionError" },
+    "rollback": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "enum": ["succeeded", "failed", "partial"] },
+        "note": { "type": "string" },
+        "at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/evidence" },
+      "description": "Links to the system of record: API response ids, log URLs, audit entries."
+    },
+    "traceId": { "type": "string" }
+  },
+  "definitions": {
+    "contentHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "executionStatus": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "queued",
+        "running",
+        "partially_succeeded",
+        "succeeded",
+        "failed",
+        "rolled_back"
+      ]
+    },
+    "executionError": {
+      "type": "object",
+      "required": ["code", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" }
+      }
+    },
+    "externalRef": {
+      "type": "object",
+      "required": ["system", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "system": { "type": "string" },
+        "id": { "type": "string" },
+        "url": { "type": "string", "description": "http(s) only; sanitized before rendering." },
+        "label": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["label"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "ref": { "type": "string" },
+        "url": { "type": "string" },
+        "snippet": { "type": "string" },
+        "kind": { "type": "string" }
+      }
+    }
+  }
+}

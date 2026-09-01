@@ -1,0 +1,47 @@
+{
+  "name": "@reviewkit/react",
+  "version": "0.1.0-alpha.0",
+  "description": "React components for ReviewKit: review detail, list with bulk selection, before/after diff, approve / edit-then-approve / reject / defer, execution results.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "styles.css",
+    "README.md"
+  ],
+  "keywords": [
+    "react",
+    "agent",
+    "human-in-the-loop",
+    "approval",
+    "review",
+    "diff"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@reviewkit/core": "0.1.0-alpha.0",
+    "@tanstack/react-virtual": "^3.13.12"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0",
+    "react-dom": "^18.2.0 || ^19.0.0"
+  },
+  "scripts": {
+    "build": "tsdown"
+  }
+}

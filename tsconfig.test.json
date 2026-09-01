@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // Tests import packages by name but resolve to sources, exactly like
+    // vitest.config.ts does — so a typecheck failure means a real API mismatch.
+    "paths": {
+      "@reviewkit/core": ["./packages/core/src/index.ts"],
+      "@reviewkit/react": ["./packages/react/src/index.ts"],
+      "@reviewkit/adapter-openai-agents": ["./packages/adapter-openai-agents/src/index.ts"],
+      "@reviewkit/adapter-langgraph": ["./packages/adapter-langgraph/src/index.ts"]
+    }
+  },
+  "include": ["test/**/*.ts", "packages/*/test/**/*.ts", "packages/*/test/**/*.tsx", "vitest.config.ts"]
+}
