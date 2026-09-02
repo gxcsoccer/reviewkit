@@ -1,18 +1,24 @@
 import { useCallback, useState } from "react";
-import { ActionReview, jsonRenderer, tableRenderer, textRenderer } from "@reviewkit/react";
+import {
+  ActionReview,
+  ReviewKitProvider,
+  jsonRenderer,
+  tableRenderer,
+  textRenderer,
+} from "@reviewkit/react";
 import type { ExecutionReceipt, ExecutionRequest, ReviewDecision } from "@reviewkit/core";
 import { SCHEMA_VERSION } from "@reviewkit/core";
-import { sampleProposal } from "./sample";
+import { SAMPLE_SHA, SAMPLE_VERSION, sampleProposal } from "./sample";
 
 export default function App() {
-  const [log, setLog] = useState("Waiting for a decision.");
+  const [log, setLog] = useState("等待审阅决定。主机执行，界面不直连 CRM。");
 
   const onDecision = useCallback(async (decision: ReviewDecision) => {
-    setLog("Decision " + decision.kind + " bound to hash " + decision.approvedContentHash);
+    setLog("决定 " + decision.kind + " · 绑定哈希 " + decision.approvedContentHash);
   }, []);
 
   const onRequestExecution = useCallback(async (request: ExecutionRequest): Promise<ExecutionReceipt> => {
-    setLog("Host executing request " + request.id + " (ReviewKit did not call any API).");
+    setLog("主机执行请求 " + request.id + "（ReviewKit 未调用任何 API）。");
     return {
       schemaVersion: SCHEMA_VERSION,
       id: "rcp_demo",
@@ -30,19 +36,33 @@ export default function App() {
   }, []);
 
   return (
-    <div className="demo">
-      <header className="demo__hero">
-        <p className="demo__kicker">ReviewKit v0.1 Alpha</p>
-        <h1>Pull requests for agent actions</h1>
-        <p className="demo__lede">The host executes. ReviewKit never does.</p>
-        <p className="demo__log" role="status">{log}</p>
-      </header>
-      <ActionReview
-        proposal={sampleProposal}
-        renderers={[jsonRenderer(), textRenderer(), tableRenderer()]}
-        onDecision={onDecision}
-        onRequestExecution={onRequestExecution}
-      />
+    <div className="studio">
+      <aside className="hash-rail" aria-label="bound hash">
+        <div className="hash-rail__tick" />
+        <div className="hash-rail__mark">REDLINE · v{SAMPLE_VERSION}</div>
+        <div className="hash-rail__sha">{SAMPLE_SHA}</div>
+      </aside>
+      <div className="demo">
+        <header className="demo__hero">
+          <p className="demo__kicker">Redline Studio</p>
+          <p className="demo__brand">
+            REVIEW<em>KIT</em> · host executes
+          </p>
+          <h1>Pull requests for agent actions</h1>
+          <p className="demo__lede">哈希即契约。主机执行，界面不直连 HubSpot。</p>
+          <p className="demo__log" role="status">
+            {log}
+          </p>
+        </header>
+        <ReviewKitProvider theme="dark" locale="zh-CN">
+          <ActionReview
+            proposal={sampleProposal}
+            renderers={[textRenderer(), tableRenderer(), jsonRenderer()]}
+            onDecision={onDecision}
+            onRequestExecution={onRequestExecution}
+          />
+        </ReviewKitProvider>
+      </div>
     </div>
   );
 }
